@@ -118,15 +118,15 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
             {
                 resultTime = resultTime + "Morning, ";
             }
+            if (foundTime.Substring(3, 1) == "1")
+            {
+                resultTime = resultTime + "Afternoon, ";
+            }
             if (foundTime.Substring(1, 1) == "1")
             {
                 resultTime = resultTime + "Evening, ";
             }
             if (foundTime.Substring(2, 1) == "1")
-            {
-                resultTime = resultTime + "Afternoon, ";
-            }
-            if (foundTime.Substring(3, 1) == "1")
             {
                 resultTime = resultTime + "Night, ";
             }
@@ -143,6 +143,13 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
             return false;
         if (Biome != other.Biome)
             return false;
+
+        if (Version != other.Version)
+            return false;
+
+        if (Time != other.Time)
+            return false;
+
 
         if (CrossFromLocation != other.CrossFromLocation)
             return false;
