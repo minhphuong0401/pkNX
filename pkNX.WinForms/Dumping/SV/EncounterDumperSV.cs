@@ -111,12 +111,19 @@ public class EncounterDumperSV
                     if (points.Count == 0)
                         continue;
 
+                    List<PaldeaFixedSymbolPoint> ps = new();
+                    foreach (var pp in points)
+                    {
+                        PaldeaFixedSymbolPoint tp = pp.DeepCopy();
+                        ps.Add(tp);
+                    }
+
                     var appearAreas = new List<AppearTuple>();
 
-                    if (!FindArea(AreaType.Cave))
-                        FindArea(AreaType.Default);
+                    if (!FindArea(AreaType.Cave, ps))
+                        FindArea(AreaType.Default, ps);
 
-                    bool FindArea(AreaType type)
+                    bool FindArea(AreaType type, List<PaldeaFixedSymbolPoint> points)
                     {
                         for (var x = areaNames.Count - 1; x >= 0; x--)
                         {
