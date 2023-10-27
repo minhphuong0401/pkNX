@@ -4,7 +4,7 @@ using pkNX.Structures.FlatBuffers.SV;
 
 namespace pkNX.Structures.FlatBuffers;
 
-public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel, byte MaxLevel, byte Time, ushort CrossFromLocation = 0) : IComparable<PaldeaEncounter>
+public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel, byte MaxLevel, byte Time, ushort CrossFromLocation = 0, string Biome="", int EncRate=0, string Version="", string LeaderName="") : IComparable<PaldeaEncounter>
 {
     public byte MinLevel { get; private set; } = MinLevel;
     public byte MaxLevel { get; private set; } = MaxLevel;
@@ -27,7 +27,32 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
         var max = (byte)(Math.Min(ep.LevelRange.Y, pd.MaxLevel) + adjust);
         if (max > 100)
             max = 100;
-        return new(SpeciesConverterSV.GetNational9((ushort)pd.DevId), (byte)pd.Form, (byte)pd.Sex, min, max, time);
+        Biome biomeInt = (Biome)(int)ep.Biome;
+        int encRate = 0;
+        if (biomeInt == pd.Biome1)
+            encRate = pd.LotValue1;
+        if (biomeInt == pd.Biome2)
+            encRate = pd.LotValue2;
+        if (biomeInt == pd.Biome3)
+            encRate = pd.LotValue3;
+        if (biomeInt == pd.Biome4)
+            encRate = pd.LotValue4;
+
+        string version = "";
+        if ((pd.Version.A) && (pd.Version.B))
+        {
+            version = "Both";
+        }
+        else if (pd.Version.A)
+        {
+            version = "Scarlet";
+        }
+        else if (pd.Version.B)
+        {
+            version = "Violet";
+        }
+
+        return new(SpeciesConverterSV.GetNational9((ushort)pd.DevId), (byte)pd.Form, (byte)pd.Sex, min, max, time, 0, ep.Biome.ToString(), encRate, version);
     }
 
     public static PaldeaEncounter GetBand(EncountPokeData pd, PointData ep, int adjust = 0)
@@ -36,7 +61,34 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
         var time = GetTimeBits(pd.Time);
         var min = (byte)(Math.Max(ep.LevelRange.X, pd.MinLevel) + adjust);
         var max = (byte)(Math.Min(ep.LevelRange.Y, pd.MaxLevel) + adjust);
-        return new(SpeciesConverterSV.GetNational9((ushort)pd.BandPoke), (byte)pd.BandForm, (byte)pd.BandSex, min, max, time);
+        Biome biomeInt = (Biome)(int)ep.Biome;
+        int encRate = 0;
+        if (biomeInt == pd.Biome1)
+            encRate = pd.LotValue1;
+        if (biomeInt == pd.Biome2)
+            encRate = pd.LotValue2;
+        if (biomeInt == pd.Biome3)
+            encRate = pd.LotValue3;
+        if (biomeInt == pd.Biome4)
+            encRate = pd.LotValue4;
+
+        string version = "";
+        if ((pd.Version.A) && (pd.Version.B))
+        {
+            version = "Both";
+        }
+        else if (pd.Version.A)
+        {
+            version = "Scarlet";
+        }
+        else if (pd.Version.B)
+        {
+            version = "Violet";
+        }
+
+        ushort leader = SpeciesConverterSV.GetNational9((ushort)pd.DevId);
+        string leaderName = ((PKHeX.Core.Species)leader).ToString();
+        return new(SpeciesConverterSV.GetNational9((ushort)pd.BandPoke), (byte)pd.BandForm, (byte)pd.BandSex, min, max, time,0, "Band", 100, version, leaderName);
     }
 
     public string GetEncountString(IReadOnlyList<string> specNamesInternal)
@@ -54,13 +106,44 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
     {
         var form = Form == 0 ? "" : $"-{Form}";
         var sex = Sex == 0 ? "" : $" (sex={Sex})";
-        return $"{species}{form}{sex} Lv. {MinLevel}-{MaxLevel}";
+        string foundTime = Convert.ToString(15 - Time, 2).PadLeft(4, '0');
+        string resultTime = "";
+        if (foundTime == "1111")
+        {
+            resultTime = "All Day";
+        }
+        else
+        {
+            if (foundTime.Substring(0, 1) == "1")
+            {
+                resultTime = resultTime + "Morning, ";
+            }
+            if (foundTime.Substring(1, 1) == "1")
+            {
+                resultTime = resultTime + "Evening, ";
+            }
+            if (foundTime.Substring(2, 1) == "1")
+            {
+                resultTime = resultTime + "Afternoon, ";
+            }
+            if (foundTime.Substring(3, 1) == "1")
+            {
+                resultTime = resultTime + "Night, ";
+            }
+            resultTime = resultTime.Substring(0, resultTime.Length - 2);
+
+        }
+
+        return $"{species}{form}{sex}/Lv.{MinLevel}-{MaxLevel}/{resultTime}/{Biome}/{EncRate}/{LeaderName}/{Version}";
     }
 
     public bool Absorb(PaldeaEncounter other)
     {
         if (Time != other.Time)
             return false;
+        if (Biome != other.Biome)
+            return false;
+
         if (CrossFromLocation != other.CrossFromLocation)
             return false;
         if (other.MinLevel == MinLevel && other.MaxLevel == MaxLevel)
