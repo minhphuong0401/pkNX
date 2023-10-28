@@ -145,7 +145,6 @@ public class LocationStorage
             {
                 if (!IsAbleToSpawnAt(pd, spawner, AreaName, scene, FieldIndex))
                     continue;
-
                 // Add encount
                 var point = spawner.Point;
                 spawner.Add(PaldeaEncounter.GetNew(pd, point));

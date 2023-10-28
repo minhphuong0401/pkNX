@@ -89,6 +89,7 @@ public class EncounterDumperSV
         foreach (var (game, gamePoints) in new[] { ("sl", fsym.scarletPoints), ("vl", fsym.violetPoints) })
         {
             using var gw = File.CreateText(Path.Combine(path, $"titan_fixed_{game}.txt"));
+            gw.WriteLine("Species,Form,Level,Sex,Shiny,IVs,Ability,Moves,Scale,GemType,Rarity,Area");
             foreach (var fieldIndex in new[] { PaldeaFieldIndex.Paldea, PaldeaFieldIndex.Kitakami })
             {
                 var areaNames = scene.AreaNames[(int)fieldIndex];
@@ -160,22 +161,13 @@ public class EncounterDumperSV
                     }
 
                     var locs = appearAreas.Select(a => placeNameMap[a.PlaceName].Index).Distinct().ToList();
-
-                    gw.WriteLine("===");
-                    gw.WriteLine($"{tableKey} - {i}");
-                    gw.WriteLine("===");
-                    gw.WriteLine("  PokeData:");
                     var pd = entry.Symbol;
-                    gw.WriteLine($"    Species: {specNamesInternal[(int)pd.DevId]}");
-                    gw.WriteLine($"    Form:    {pd.FormId}");
-                    gw.Write($"    Level:   {pd.Level}");
+                    gw.Write($"{specNamesInternal[(int)pd.DevId]},{pd.FormId},{pd.Level}");
                     foreach (var adj in appearAreas.Select(a => a.Adjust).Where(lv => lv != 0).Distinct().Order())
                     {
-                        gw.Write($", {pd.Level + adj}");
+                        gw.Write($"/{pd.Level + adj}");
                     }
-                    gw.WriteLine();
-                    gw.WriteLine($"    Sex:     {Humanize(pd.Sex)}");
-                    gw.WriteLine($"    Shiny:   {Humanize(pd.RareType)}");
+                    gw.Write($",{Humanize(pd.Sex)},{Humanize(pd.RareType)},");
 
                     var talentStr = pd.TalentType switch
                     {
@@ -184,34 +176,29 @@ public class EncounterDumperSV
                         TalentType.VALUE => $"{pd.TalentValue.HP}/{pd.TalentValue.ATK}/{pd.TalentValue.DEF}/{pd.TalentValue.SPA}/{pd.TalentValue.SPD}/{pd.TalentValue.SPE}",
                         _ => "Invalid",
                     };
-                    gw.WriteLine($"    IVs:     {talentStr}");
-                    gw.WriteLine($"    Ability: {Humanize(pd.TokuseiIndex)}");
+                    gw.Write($"{talentStr},{Humanize(pd.TokuseiIndex)},");
                     switch (pd.WazaType)
                     {
                         case WazaType.DEFAULT:
-                            gw.WriteLine("    Moves:   Random");
+                            gw.Write("Random,");
                             break;
                         case WazaType.MANUAL:
-                            gw.WriteLine($"    Moves:   {moveNames[(int)pd.Waza1.WazaId]}/{moveNames[(int)pd.Waza2.WazaId]}/{moveNames[(int)pd.Waza3.WazaId]}/{moveNames[(int)pd.Waza4.WazaId]}");
+                            gw.Write($"{moveNames[(int)pd.Waza1.WazaId]}/{moveNames[(int)pd.Waza2.WazaId]}/{moveNames[(int)pd.Waza3.WazaId]}/{moveNames[(int)pd.Waza4.WazaId]},");
                             break;
                     }
 
-                    gw.WriteLine($"    Scale:   {Humanize(pd.ScaleType, pd.ScaleValue)}");
-                    gw.WriteLine($"    GemType: {(int)pd.GemType}");
+                    gw.Write($"{Humanize(pd.ScaleType, pd.ScaleValue)},{(int)pd.GemType},");
 
-                    gw.WriteLine("  Points:");
-                    foreach (var point in points)
-                    {
-                        gw.WriteLine($"    - ({point.Position.X}, {point.Position.Y}, {point.Position.Z})");
-                    }
+                    gw.Write($"{points.Count},");
+                    HashSet<string> writeAreas = new HashSet<string>();
 
-                    gw.WriteLine("  Areas:");
                     foreach (var area in appearAreas)
                     {
                         var loc = area.PlaceName;
                         (string name, int index) = placeNameMap[loc];
-                        gw.WriteLine($"    - {area.PlaceName} - {loc} - {name} ({index})");
+                        writeAreas.Add(name);
                     }
+                    gw.WriteLine($"{string.Join("/", writeAreas)}");
 
                     // Serialize
                     if (locs.Count == 0)
@@ -724,7 +711,6 @@ public class EncounterDumperSV
             (string name, int index) = placeNameMap[place];
             if (!db.Locations.TryGetValue(index, out var encounts))
                 continue;
-
             var heading = $"{name} ({index})";
             WriteEncounts(tw, specNamesInternal, heading, encounts.Slots);
         }

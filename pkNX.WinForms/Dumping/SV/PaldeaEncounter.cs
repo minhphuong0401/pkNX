@@ -4,7 +4,7 @@ using pkNX.Structures.FlatBuffers.SV;
 
 namespace pkNX.Structures.FlatBuffers;
 
-public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel, byte MaxLevel, byte Time, ushort CrossFromLocation = 0, string Biome="", int EncRate=0, string Version="", string LeaderName="") : IComparable<PaldeaEncounter>
+public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel, byte MaxLevel, byte Time, ushort CrossFromLocation = 0, string Biome="", int EncRate=0, string Version="", string LeaderName="", string Boost="false") : IComparable<PaldeaEncounter>
 {
     public byte MinLevel { get; private set; } = MinLevel;
     public byte MaxLevel { get; private set; } = MaxLevel;
@@ -51,8 +51,12 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
         {
             version = "Violet";
         }
-
-        return new(SpeciesConverterSV.GetNational9((ushort)pd.DevId), (byte)pd.Form, (byte)pd.Sex, min, max, time, 0, ep.Biome.ToString(), encRate, version);
+        string boost = "false";
+        if (adjust > 0)
+        {
+            boost = "true";
+        }
+        return new(SpeciesConverterSV.GetNational9((ushort)pd.DevId), (byte)pd.Form, (byte)pd.Sex, min, max, time, 0, ep.Biome.ToString(), encRate, version, "", boost);
     }
 
     public static PaldeaEncounter GetBand(EncountPokeData pd, PointData ep, int adjust = 0)
@@ -86,9 +90,16 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
             version = "Violet";
         }
 
+        string boost = "false";
+        if (adjust > 0)
+        {
+            boost = "true";
+        }
+
+
         ushort leader = SpeciesConverterSV.GetNational9((ushort)pd.DevId);
         string leaderName = ((PKHeX.Core.Species)leader).ToString();
-        return new(SpeciesConverterSV.GetNational9((ushort)pd.BandPoke), (byte)pd.BandForm, (byte)pd.BandSex, min, max, time,0, "Band", 100, version, leaderName);
+        return new(SpeciesConverterSV.GetNational9((ushort)pd.BandPoke), (byte)pd.BandForm, (byte)pd.BandSex, min, max, time,0, "Band", 100, version, leaderName, boost);
     }
 
     public string GetEncountString(IReadOnlyList<string> specNamesInternal)
@@ -134,7 +145,7 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
 
         }
 
-        return $"{species}{form}{sex}/Lv.{MinLevel}-{MaxLevel}/{resultTime}/{Biome}/{EncRate}/{LeaderName}/{Version}";
+        return $"{species}{form}{sex}/Lv.{MinLevel}-{MaxLevel}/{resultTime}/{Biome}/{EncRate}/{LeaderName}/{Version}/{Boost}";
     }
 
     public bool Absorb(PaldeaEncounter other)
