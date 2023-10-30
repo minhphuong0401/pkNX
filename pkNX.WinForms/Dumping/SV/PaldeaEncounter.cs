@@ -4,7 +4,7 @@ using pkNX.Structures.FlatBuffers.SV;
 
 namespace pkNX.Structures.FlatBuffers;
 
-public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel, byte MaxLevel, byte Time, ushort CrossFromLocation = 0, string Biome="", int EncRate=0, string Version="", string LeaderName="", string Boost="false") : IComparable<PaldeaEncounter>
+public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel, byte MaxLevel, byte Time, ushort CrossFromLocation = 0, string Biome="", int EncRate=0, string Version="", string LeaderName="", string BandRate="", string Boost="false") : IComparable<PaldeaEncounter>
 {
     public byte MinLevel { get; private set; } = MinLevel;
     public byte MaxLevel { get; private set; } = MaxLevel;
@@ -21,6 +21,26 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
 
     public static PaldeaEncounter GetNew(EncountPokeData pd, PointData ep, int adjust = 0)
     {
+
+        string boost = "false";
+        if (adjust == -1)
+        {
+            boost = "";
+        }
+        else if (adjust == 0)
+        {
+            boost = "Before beating the game";
+        }
+        else
+        {
+            boost = "After beating the game";
+        }
+
+        if (adjust == -1)
+        {
+            adjust = 0;
+        }
+
         // Combine the 4 bools into a single byte
         var time = GetTimeBits(pd.Time);
         var min = (byte)(Math.Max(ep.LevelRange.X, pd.MinLevel) + adjust);
@@ -51,16 +71,32 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
         {
             version = "Violet";
         }
-        string boost = "false";
-        if (adjust > 0)
-        {
-            boost = "true";
-        }
-        return new(SpeciesConverterSV.GetNational9((ushort)pd.DevId), (byte)pd.Form, (byte)pd.Sex, min, max, time, 0, ep.Biome.ToString(), encRate, version, "", boost);
+        return new(SpeciesConverterSV.GetNational9((ushort)pd.DevId), (byte)pd.Form, (byte)pd.Sex, min, max, time, 0, ep.Biome.ToString(), encRate, version, "", "", boost);
     }
 
     public static PaldeaEncounter GetBand(EncountPokeData pd, PointData ep, int adjust = 0)
     {
+
+        string boost = "false";
+        if (adjust == -1)
+        {
+            boost = "";
+        }
+        else if (adjust == 0)
+        {
+            boost = "Before beating the game";
+        }
+        else
+        {
+            boost = "After beating the game";
+        }
+
+        if (adjust == -1)
+        {
+            adjust = 0;
+        }
+
+
         // Combine the 4 bools into a single byte
         var time = GetTimeBits(pd.Time);
         var min = (byte)(Math.Max(ep.LevelRange.X, pd.MinLevel) + adjust);
@@ -90,16 +126,11 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
             version = "Violet";
         }
 
-        string boost = "false";
-        if (adjust > 0)
-        {
-            boost = "true";
-        }
 
-
+        string bandRate = pd.BandRate.ToString();
         ushort leader = SpeciesConverterSV.GetNational9((ushort)pd.DevId);
         string leaderName = ((PKHeX.Core.Species)leader).ToString();
-        return new(SpeciesConverterSV.GetNational9((ushort)pd.BandPoke), (byte)pd.BandForm, (byte)pd.BandSex, min, max, time,0, "Band", 100, version, leaderName, boost);
+        return new(SpeciesConverterSV.GetNational9((ushort)pd.BandPoke), (byte)pd.BandForm, (byte)pd.BandSex, min, max, time, 0, "Band", 100, version, leaderName, bandRate, boost);
     }
 
     public string GetEncountString(IReadOnlyList<string> specNamesInternal)
@@ -145,7 +176,7 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
 
         }
 
-        return $"{species}{form}{sex}/Lv.{MinLevel}-{MaxLevel}/{resultTime}/{Biome}/{EncRate}/{LeaderName}/{Version}/{Boost}";
+        return $"{species}{form}{sex}/Lv.{MinLevel}-{MaxLevel}/{resultTime}/{Biome}/{EncRate}/{LeaderName}/{BandRate}/{Version}/{Boost}";
     }
 
     public bool Absorb(PaldeaEncounter other)
@@ -161,6 +192,8 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
         if (Time != other.Time)
             return false;
 
+        if (Boost != other.Boost)
+            return false;
 
         if (CrossFromLocation != other.CrossFromLocation)
             return false;

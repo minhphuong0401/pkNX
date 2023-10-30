@@ -147,11 +147,17 @@ public class LocationStorage
                     continue;
                 // Add encount
                 var point = spawner.Point;
-                spawner.Add(PaldeaEncounter.GetNew(pd, point));
-                if (pd.BandPoke != 0) // Add band encount
-                    spawner.Add(PaldeaEncounter.GetBand(pd, point));
-
                 var boost = spawner.LevelAdjust;
+                int boostPass = -1;
+                if (boost > 0) { 
+                    boostPass = 0;
+                }
+                spawner.Add(PaldeaEncounter.GetNew(pd, point, boostPass));
+                if (pd.BandPoke != 0)
+                {  // Add band encount
+                    spawner.Add(PaldeaEncounter.GetBand(pd, point, boostPass));
+                }
+
                 if (boost == 0)
                     continue;
 
