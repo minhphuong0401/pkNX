@@ -138,8 +138,8 @@ public class GameDumperSV
         var prefix = $"messagedat{lang}";
         const string suffix = ".trpak";
         var pattern = $"{prefix}*{suffix}";
-        List<(string File, string[] Lines)> text = new();
-        List<(string File, string[] Lines)> full = new();
+        List<(string File, string[] Lines)> text = [];
+        List<(string File, string[] Lines)> full = [];
         var folders = Directory.EnumerateDirectories(arcPath, pattern, SearchOption.TopDirectoryOnly);
         foreach (var folder in folders)
         {
@@ -253,7 +253,7 @@ public class GameDumperSV
         var evos = SerializeEvolutionPickle(pt);
         File.WriteAllBytes(GetPath("pkhex", "evos_sv.pkl"), MiniUtil.PackMini(evos, "sv"));
 
-        List<(ushort Internal, ushort National)> map = new();
+        List<(ushort Internal, ushort National)> map = [];
         for (ushort i = 0; i <= (ushort)DevID.DEV_MATCHA2; i++)
         {
             var pi = pt[i];
@@ -335,7 +335,7 @@ public class GameDumperSV
         {
             var p = t[i].FB;
             if (!p.IsPresentInGame)
-                result[i] = Array.Empty<byte>();
+                result[i] = [];
             else
                 result[i] = Write(sel(p));
         }
@@ -362,7 +362,7 @@ public class GameDumperSV
         static byte[] GetPickle(PersonalInfo9SV e)
         {
             if (!e.IsPresentInGame)
-                return Array.Empty<byte>();
+                return [];
             return Write(e.FB.Info.SpeciesNational, e.FB.Evolutions);
         }
 
@@ -546,12 +546,14 @@ public class GameDumperSV
         Dump<PointDataArray, PointData>("world/data/encount/point_data/point_data/encount_data_100000.bfbs", z => z.Table);
         Dump<PointDataArray, PointData>("world/data/encount/point_data/point_data/encount_data_su1.bfbs", z => z.Table);
         Dump<PointDataArray, PointData>("world/data/encount/point_data/point_data/encount_data_su2.bfbs", z => z.Table);
+      //Dump<PointDataArray, PointData>("world/data/encount/point_data/point_data/encount_data_lc.bfbs", z => z.Table); -- no points (null array)
         Dump<OutbreakPointArray, OutbreakPointData>("world/data/encount/point_data/outbreak_point_data/outbreak_point_main.bfbs", z => z.Table);
         Dump<OutbreakPointArray, OutbreakPointData>("world/data/encount/point_data/outbreak_point_data/outbreak_point_su1.bfbs", z => z.Table);
         Dump<OutbreakPointArray, OutbreakPointData>("world/data/encount/point_data/outbreak_point_data/outbreak_point_su2.bfbs", z => z.Table);
         Dump<EncountPokeDataArray, EncountPokeData>("world/data/encount/pokedata/pokedata/pokedata_array.bfbs", z => z.Table);
         Dump<EncountPokeDataArray, EncountPokeData>("world/data/encount/pokedata/pokedata_su1/pokedata_su1_array.bfbs", z => z.Table);
         Dump<EncountPokeDataArray, EncountPokeData>("world/data/encount/pokedata/pokedata_su2/pokedata_su2_array.bfbs", z => z.Table);
+        Dump<EncountPokeDataArray, EncountPokeData>("world/data/encount/pokedata/pokedata_lc/pokedata_lc_array.bfbs", z => z.Table);
         DumpJson<SettingData>("world/data/encount/setting/setting/data.bfbs");
         Dump<RaidDifficultyLotteryTableArray, RaidDifficultyLotteryTable>("world/data/encount/setting/raid_difficulty_lottery/raid_difficulty_lottery_array.bfbs", z => z.Table);
         DumpJson<RaidGemSetting>("world/data/encount/setting/raid_gem_setting/raid_gem_setting.bfbs");
@@ -748,11 +750,13 @@ public class GameDumperSV
         Dump<HiddenItemBiomeTableArray, HiddenItemBiomeTable>("world/data/item/hiddenItemBiomeTable/hiddenItemBiomeTable_array.bfbs", z => z.Table);
         Dump<HiddenItemBiomeTableArray, HiddenItemBiomeTable>("world/data/item/hiddenItemBiomeTable_su1/hiddenItemBiomeTable_su1_array.bfbs", z => z.Table);
         Dump<HiddenItemBiomeTableArray, HiddenItemBiomeTable>("world/data/item/hiddenItemBiomeTable_su2/hiddenItemBiomeTable_su2_array.bfbs", z => z.Table);
+        Dump<HiddenItemBiomeTableArray, HiddenItemBiomeTable>("world/data/item/hiddenItemBiomeTable_lc/hiddenItemBiomeTable_lc_array.bfbs", z => z.Table);
         Dump<DropItemDataArray, DropItemData>("world/data/item/dropitemdata/dropitemdata_array.bfbs", z => z.Table);
         Dump<ItemDataArray, ItemData>("world/data/item/itemdata/itemdata_array.bfbs", z => z.Table);
         Dump<HiddenItemDataTableArray, HiddenItemDataTable>("world/data/item/hiddenItemDataTable/hiddenItemDataTable_array.bfbs", z => z.Table);
         Dump<HiddenItemDataTableArray, HiddenItemDataTable>("world/data/item/hiddenItemDataTable_su1/hiddenItemDataTable_su1_array.bfbs", z => z.Table);
         Dump<HiddenItemDataTableArray, HiddenItemDataTable>("world/data/item/hiddenItemDataTable_su2/hiddenItemDataTable_su2_array.bfbs", z => z.Table);
+        Dump<HiddenItemDataTableArray, HiddenItemDataTable>("world/data/item/hiddenItemDataTable_lc/hiddenItemDataTable_lc_array.bfbs", z => z.Table);
         Dump<MonohiroiItemArray, MonohiroiItem>("world/data/item/monohiroiItemData/monohiroiItemData_array.bfbs", z => z.Table);
     }
 
@@ -1106,12 +1110,14 @@ public class GameDumperSV
             "world/data/encount/point_data/point_data/encount_data_100000.bfbs",
             "world/data/encount/point_data/point_data/encount_data_su1.bfbs",
             "world/data/encount/point_data/point_data/encount_data_su2.bfbs",
+            "world/data/encount/point_data/point_data/encount_data_lc.bfbs",
             "world/data/encount/point_data/outbreak_point_data/outbreak_point_main.bfbs",
             "world/data/encount/point_data/outbreak_point_data/outbreak_point_su1.bfbs",
             "world/data/encount/point_data/outbreak_point_data/outbreak_point_su2.bfbs",
             "world/data/encount/pokedata/pokedata/pokedata_array.bfbs",
             "world/data/encount/pokedata/pokedata_su1/pokedata_su1_array.bfbs",
             "world/data/encount/pokedata/pokedata_su2/pokedata_su2_array.bfbs",
+            "world/data/encount/pokedata/pokedata_lc/pokedata_lc_array.bfbs",
             "world/data/encount/setting/setting/data.bfbs",
             "world/data/encount/setting/raid_difficulty_lottery/raid_difficulty_lottery_array.bfbs",
             "world/data/encount/setting/raid_gem_setting/raid_gem_setting.bfbs",
