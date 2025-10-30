@@ -148,18 +148,12 @@ public class LocationStorage(int loc, PaldeaFieldIndex fieldIndex, string areaNa
             {
                 if (!IsAbleToSpawnAt(pd, spawner, AreaName, scene, fieldIndex))
                     continue;
+
                 // Add encount
                 var point = spawner.Point;
-                var boost = spawner.LevelAdjust;
-                int boostPass = -1;
-                if (boost > 0) { 
-                    boostPass = 0;
-                }
-                spawner.Add(PaldeaEncounter.GetNew(pd, point, boostPass));
-                if (pd.BandPoke != 0)
-                {  // Add band encount
-                    spawner.Add(PaldeaEncounter.GetBand(pd, point, boostPass));
-                }
+                spawner.Add(PaldeaEncounter.GetNew(pd, point));
+                if (pd.BandPoke != 0) // Add band encount
+                    spawner.Add(PaldeaEncounter.GetBand(pd, point));
 
                 if (boost == 0)
                     continue;
@@ -171,6 +165,7 @@ public class LocationStorage(int loc, PaldeaFieldIndex fieldIndex, string areaNa
             }
         }
     }
+
 
     private static bool IsAbleToSpawnAt(EncountPokeData pd, LocationPointDetail ep, string areaName, PaldeaSceneModel scene, PaldeaFieldIndex fieldIndex)
     {
