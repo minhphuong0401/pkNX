@@ -182,6 +182,8 @@ public enum GameFile
     ArchiveFolder,
     PokemonArchiveFolder,
 
+    ItemHash,
+
     /// <summary> Area Resident Archive </summary>
     Resident,
     archive_contents,
@@ -216,6 +218,7 @@ public enum GameFile
     BallThrowConfig,
 
     HaShop,
+    MakeList,
     NewHugeGroup,
     NewHugeGroupLottery,
     NewHugeLottery,

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Text;
 
 // Source https://stackoverflow.com/questions/1427471/observablecollection-not-noticing-when-item-in-it-changes-even-with-inotifyprop/32013610
 
@@ -45,7 +44,7 @@ public sealed class NotifyObservableCollection<T> : ObservableCollection<T>
         OnPropertyChanged(new PropertyChangedEventArgs("Items"));
     }
 
-    private void ItemPropertyChanged(object sender, PropertyChangedEventArgs e)
+    private void ItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         NotifyCollectionChangedEventArgs args = new(NotifyCollectionChangedAction.Replace, sender, sender, IndexOf((T)sender));
         OnCollectionChanged(args);

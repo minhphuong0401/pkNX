@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
-using FlatSharp;
 using pkNX.Containers;
 using pkNX.Game;
 using pkNX.Structures;
@@ -53,7 +52,7 @@ public partial class MapViewer8a : Form
 
         CB_Species.DisplayMember = nameof(ComboItem.Text);
         CB_Species.ValueMember = nameof(ComboItem.Value);
-        CB_Species.DataSource = new BindingSource(nameList, null);
+        CB_Species.DataSource = new BindingSource(nameList, string.Empty);
 
         CB_Species.SelectedValue = -1;
         Loading = false;
@@ -164,7 +163,7 @@ public partial class MapViewer8a : Form
         foreach (var s in area.Spawners.Concat(area.SubAreas.SelectMany(z => z.Spawners)))
         {
             var table = s.Field20Value.EncounterTableID;
-            var slots = area.Encounters.BinarySearchByFlatBufferKey(table);
+            var slots = area.Encounters.FirstOrDefault(z => z.TableID == table);
             if (slots == null)
                 continue;
 
@@ -177,7 +176,7 @@ public partial class MapViewer8a : Form
         foreach (var s in area.Wormholes.Concat(area.SubAreas.SelectMany(z => z.Wormholes)))
         {
             var table = s.Field20Value.EncounterTableID;
-            var slots = area.Encounters.BinarySearchByFlatBufferKey(table);
+            var slots = area.Encounters.FirstOrDefault(z => z.TableID == table);
             if (slots == null)
                 continue;
 
@@ -195,7 +194,7 @@ public partial class MapViewer8a : Form
                 if (l.LandmarkItemSpawnTableID != table)
                     continue;
                 var st = l.EncounterTableID;
-                var slots = area.Encounters.BinarySearchByFlatBufferKey(st);
+                var slots = area.Encounters.FirstOrDefault(z => z.TableID == st);
                 if (slots == null)
                     continue;
 
@@ -212,7 +211,7 @@ public partial class MapViewer8a : Form
         foreach (var u in area.Unown.Concat(area.SubAreas.SelectMany(z => z.Unown)))
         {
             var slots = Unown;
-            result.Add(new("Unown", 1, 1, u.Parameters.Coordinates, SpawnerType.Unown, slots, u.Number * 2));
+            result.Add(new("Unown", 1, 1, u.Parameters.Coordinates, SpawnerType.Unown, slots, u.Number * 2)); // arbitrary size
         }
 
         return result;

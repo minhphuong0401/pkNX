@@ -4,7 +4,6 @@ using pkNX.Structures;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Forms;
 using Application = System.Windows.Forms.Application;
@@ -209,7 +208,7 @@ public partial class Main : Form
 
         if (category == EditorCategory.None)
         {
-            foreach (var c in (EditorCategory[])Enum.GetValues(typeof(EditorCategory)))
+            foreach (var c in Enum.GetValues<EditorCategory>())
             {
                 if (c == EditorCategory.None)
                     continue;

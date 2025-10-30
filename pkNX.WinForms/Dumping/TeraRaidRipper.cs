@@ -118,7 +118,7 @@ public static class TeraRaidRipper
 
     public static void DumpDistributionRaids(IFileInternal ROM, string path)
     {
-        var dirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories).OrderBy(z => z);
+        var dirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories).Order();
         var type2 = new List<byte[]>();
         var type3 = new List<byte[]>();
 
@@ -306,6 +306,10 @@ public static class TeraRaidRipper
     private static void TryAddToPickle(RaidEnemyInfo enc, ICollection<byte[]> list, RaidSerializationFormat format,
         ReadOnlySpan<ushort> totalS, ReadOnlySpan<ushort> totalV, ReadOnlySpan<ushort> minS, ReadOnlySpan<ushort> minV)
     {
+        // not catchable
+        if (enc.CaptureRate is 0)
+            return;
+
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms);
 
@@ -454,8 +458,8 @@ public static class TeraRaidRipper
 
             var capture = entry.Info.CaptureRate switch
             {
-                // 0 never
                 // 1 always
+                0 => "Never",
                 2 => "Only Once",
                 _ => $"{entry.Info.CaptureRate}",
             };

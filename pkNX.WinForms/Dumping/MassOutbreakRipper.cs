@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,8 @@ using pkNX.Structures;
 using pkNX.Structures.FlatBuffers;
 using pkNX.Structures.FlatBuffers.SV;
 using static pkNX.Structures.Species;
+using AreaWeather9 = pkNX.Structures.FlatBuffers.AreaWeather9;
+using AreaWeather9Extensions = pkNX.Structures.FlatBuffers.AreaWeather9Extensions;
 
 namespace pkNX.WinForms;
 
@@ -16,22 +19,60 @@ public static class MassOutbreakRipper
 {
     private static readonly List<PickledOutbreak> Encounters = [];
     private static int EncounterIndex;
+    private static int FolderIndex;
     private static Dictionary<string, (string Name, int Index)> NameDict = [];
+
+    private static Dictionary<DistSpecForm, DistCoordinateSet> PopCoordinates = [];
+
+    private readonly record struct DistSpecForm(int Index, ushort Species, byte Form);
+    private readonly record struct DistPopCoordinate(float X, float Z);
+
+    private readonly record struct DistCoordinateSet
+    {
+        public DistCoordinateSet()
+        {
+            Paldea = [];
+            Kitakami = [];
+            Terarium = [];
+        }
+
+        public List<DistPopCoordinate> Paldea { get; } = [];
+        public List<DistPopCoordinate> Kitakami { get; } = [];
+        public List<DistPopCoordinate> Terarium { get; } = [];
+
+        public List<DistPopCoordinate> GetSet(PaldeaFieldIndex fieldIndex) => fieldIndex switch
+        {
+            PaldeaFieldIndex.Paldea => Paldea,
+            PaldeaFieldIndex.Kitakami => Kitakami,
+            PaldeaFieldIndex.Terarium => Terarium,
+            _ => throw new ArgumentOutOfRangeException(nameof(fieldIndex)),
+        };
+    }
 
     public static void DumpDeliveryOutbreaks(IFileInternal ROM, string path, string dump)
     {
+        EncounterIndex = FolderIndex = 0;
         Encounters.Clear();
+        PopCoordinates.Clear();
 
         var cfg = new TextConfig(Structures.GameVersion.SV);
         var place_names = GetCommonText(ROM, "place_name", "English", cfg);
         var data = ROM.GetPackedFile("message/dat/English/common/place_name.tbl");
         var ahtb = new AHTB(data);
-        NameDict = EncounterDumperSV.GetPlaceNameMap(place_names, ahtb);
+        NameDict = EncounterDumperSV.GetInternalStringLookup(place_names, ahtb);
 
-        var dirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories).OrderBy(z => z);
+        var dirs = Directory.GetDirectories(path, "*", SearchOption.AllDirectories).Order();
         foreach (var dir in dirs)
+        {
+            var index = Path.GetFileName(dir);
+            if (int.TryParse(index.Split(' ')[0], out var temp))
+                FolderIndex = temp;
+            else
+                FolderIndex++;
             DumpDeliveryOutbreakData(ROM, dir);
+        }
         ExportPickle(dump, Encounters);
+        ExportCoordinates(dump, PopCoordinates);
     }
 
     private sealed record PickledOutbreak
@@ -52,7 +93,7 @@ public static class MassOutbreakRipper
         public required bool IsShiny { get; init; }
     }
 
-    private static void DumpDeliveryOutbreakData(IFileInternal ROM, string path)
+    private static bool DumpDeliveryOutbreakData(IFileInternal ROM, string path)
     {
         var zoneF0 = Path.Combine(path, "zone_main_array_2_0_0");
         var zoneF1 = Path.Combine(path, "zone_su1_array_2_0_0");
@@ -62,7 +103,7 @@ public static class MassOutbreakRipper
         const string v300 = "_3_0_0";
 
         if (!File.Exists(pokedata))
-            return;
+            return false;
 
         if (!File.Exists(zoneF2))
             zoneF2 = zoneF1;
@@ -92,6 +133,7 @@ public static class MassOutbreakRipper
         DumpPretty(ROM, dirDistText, false);
         DumpPretty(ROM, dirDistText, true);
         EncounterIndex = Encounters.Count;
+        return true;
     }
 
     private const ulong LastDistribution2 = 2023120801;
@@ -106,7 +148,8 @@ public static class MassOutbreakRipper
         {
             var ordered = enc.MetPermit
                 .OrderBy(z => z.Key.Min)
-                .ThenBy(z => z.Key.Max);
+                .ThenBy(z => z.Key.Max)
+                .ThenByDescending(z => z.Key.Weather);
 
             foreach (var (range, permit) in ordered)
             {
@@ -127,17 +170,18 @@ public static class MassOutbreakRipper
         bw.Write(range.Min);
         bw.Write(range.Max);
         bw.Write((byte)enc.Ribbon);
-        bw.Write(enc.MetBase);
+        bw.Write((byte)range.Weather);
 
         bw.Write(enc.ForceScaleRange ? (byte)1 : (byte)0);
         bw.Write(enc.ScaleMin);
         bw.Write(enc.ScaleMax);
         bw.Write(enc.IsShiny ? (byte)1 : (byte)0);
 
+        Debug.Assert(permit >> 120 == 0);
+        permit <<= 8; // Shift to make room for the met base.
+        permit |= enc.MetBase;
         bw.Write((ulong)permit);
         bw.Write((ulong)(permit >> 64));
-
-        return;
     }
 
     private static byte ClampAddBoost(byte val, int b) => (byte)Math.Clamp(val + b, 1, 100);
@@ -177,10 +221,34 @@ public static class MassOutbreakRipper
         }
     }
 
-    private const float Tolerance = 30f;
-    private const float TolX = Tolerance, TolY = Tolerance, TolZ = Tolerance;
+    private static void ExportCoordinates(string dump, Dictionary<DistSpecForm, DistCoordinateSet> popCoordinates)
+    {
+        var dest = Path.Combine(dump, "outbreak_coordinates");
+        Directory.CreateDirectory(dest);
+        foreach (var (sf, coords) in popCoordinates)
+        {
+            var folder = Path.Combine(dest, $"{sf.Index:000}");
+            Directory.CreateDirectory(folder);
 
-    private static void AddForMap(IEnumerable<OutbreakPointData> points,
+            WriteCoordinates(folder, PaldeaFieldIndex.Paldea, coords.Paldea, sf);
+            WriteCoordinates(folder, PaldeaFieldIndex.Kitakami, coords.Kitakami, sf);
+            WriteCoordinates(folder, PaldeaFieldIndex.Terarium, coords.Terarium, sf);
+            continue;
+
+            static void WriteCoordinates(string folder, PaldeaFieldIndex type, IReadOnlyList<DistPopCoordinate> coords, DistSpecForm sf)
+            {
+                if (coords.Count == 0)
+                    return;
+                var fileName = Path.Combine(folder, $"{type} {(PKHeX.Core.Species)sf.Species}_{sf.Form}.txt");
+                var lines = coords
+                    .Select(c => $"{c.X:R},{c.Z:R}")
+                    .Order();
+                File.WriteAllLines(fileName, lines);
+            }
+        }
+    }
+
+    private static void AddForMap(IList<OutbreakPointData> points,
         DeliveryOutbreakArray possible, DeliveryOutbreakPokeDataArray pd,
         PaldeaSceneModel scene, Dictionary<string, (string Name, int Index)> placeNameMap, PaldeaFieldIndex fieldIndex,
         byte baseMet)
@@ -198,11 +266,18 @@ public static class MassOutbreakRipper
                 .ToDictionary(z => z.Key, z => z.Value);
             areaNames = [.. areas.Keys];
         }
-        foreach (var point in points)
+        foreach (var enc in encs)
         {
-            foreach (var enc in encs)
+            var poke = enc.Poke;
+            var species = SpeciesConverterSV.GetNational9((ushort)poke.DevId);
+            var entry = new DistSpecForm(FolderIndex, species, (byte)poke.FormId);
+            if (!PopCoordinates.TryGetValue(entry, out var list))
+                PopCoordinates[entry] = list = new();
+
+            var coordStore = list.GetSet(fieldIndex);
+
+            foreach (var point in points)
             {
-                var poke = enc.Poke;
                 if (!poke.IsLevelRangeCompatible(point.LevelRange))
                     continue;
                 if (!poke.IsEnableCompatible(point.EnableTable))
@@ -212,19 +287,26 @@ public static class MassOutbreakRipper
                 if (!poke.IsCompatibleArea(point.AreaName))
                     continue;
 
+                coordStore.Add(new DistPopCoordinate(point.Position.X, point.Position.Z));
+
                 var min = Math.Max((byte)poke.MinLevel, (byte)point.LevelRange.X);
                 var max = Math.Min((byte)poke.MaxLevel, (byte)point.LevelRange.Y);
                 // Cool, can spawn at this point.
                 // Find all met location IDs we can wander to, then bitflag them into the enc field.
                 var metData = GetMetFlags(scene, placeNameMap, fieldIndex, baseMet, areaNames, areas, point, atlantis);
-                var tuple = new LevelRange(min, max);
-                enc.MetInfo.TryGetValue(tuple, out var val);
-                enc.MetInfo[tuple] = val | metData.Met;
+                var isMist = fieldIndex == PaldeaFieldIndex.Kitakami && AreaWeather9Extensions.IsMistyPoint(point.Position);
+                var weather = GetWeather(metData, isMist, baseMet);
+                var tuple = new LevelRange(min, max, weather);
+                var set = enc.MetInfo;
+                set.TryGetValue(tuple, out var val);
+                set[tuple] = val | metData.Met;
                 if (metData.Boost != 0)
                 {
-                    tuple = new LevelRange(ClampAddBoost(tuple.Min, metData.Boost), ClampAddBoost(tuple.Max, metData.Boost));
-                    enc.MetInfo.TryGetValue(tuple, out val);
-                    enc.MetInfo[tuple] = val | metData.Met;
+                    min = ClampAddBoost(tuple.Min, metData.Boost);
+                    max = ClampAddBoost(tuple.Max, metData.Boost);
+                    tuple = new LevelRange(min, max, weather);
+                    set.TryGetValue(tuple, out val);
+                    set[tuple] = val | metData.Met;
                 }
             }
         }
@@ -244,6 +326,22 @@ public static class MassOutbreakRipper
         AddToJar(encs);
     }
 
+    private static AreaWeather9 GetWeather((UInt128 Met, int Boost) metData, bool isMist, byte baseMet)
+    {
+        var value = AreaWeather9.None;
+        for (int i = 0; i < 128; i++)
+        {
+            if (((metData.Met >> i) & 1) != 1)
+                continue;
+
+            var met = baseMet + i;
+            value |= AreaWeather9Extensions.GetWeather((byte)met);
+        }
+        if (isMist)
+            value |= AreaWeather9.Mist;
+        return value;
+    }
+
     private static void ConsolidateMetInfo(IEnumerable<CachedOutbreak> encs)
     {
         foreach (var e in encs)
@@ -253,10 +351,12 @@ public static class MassOutbreakRipper
             // For each entry, if a later entry has the same flags, and the level ranges overlap, delete the later entry after merging the level ranges into the first entry.
             for (int i = 0; i < ranges.Count; i++)
             {
-                var ((min, max), met) = ranges[i];
+                var ((min, max, weather), met) = ranges[i];
                 for (int j = i + 1; j < ranges.Count; j++)
                 {
-                    var (min2, max2) = ranges[j].Key;
+                    var (min2, max2, weather2) = ranges[j].Key;
+                    if (weather != weather2)
+                        continue; // Different weather, cannot merge.
                     var met2 = ranges[j].Value;
                     if (met != met2)
                         continue;
@@ -268,7 +368,7 @@ public static class MassOutbreakRipper
                     ranges.RemoveAt(j);
                     j--;
                 }
-                ranges[i] = new(new(min, max), met);
+                ranges[i] = new(new(min, max, weather), met);
             }
             e.MetInfo.Clear();
             foreach (var r in ranges)
@@ -276,7 +376,7 @@ public static class MassOutbreakRipper
         }
     }
 
-    private record struct LevelRange(byte Min, byte Max);
+    private record struct LevelRange(byte Min, byte Max, AreaWeather9 Weather);
 
     private static void AddToJar(IEnumerable<CachedOutbreak> encs)
     {
@@ -343,15 +443,17 @@ public static class MassOutbreakRipper
 
             for (var x = 0; x < areaNames.Count; x++)
             {
-                var area = areaNames[x];
-                if (area == areaName)
+                var otherArea = areaNames[x];
+                if (otherArea == areaName)
                     continue;
 
-                if (!scene.TryGetContainsCheck(fieldIndex, area, out var subCol))
+                if (!scene.TryGetContainsCheck(fieldIndex, otherArea, out var subCol))
                     continue;
-                if (!subCol.ContainsPoint(pt.X, pt.Y, pt.Z, TolX, TolY, TolZ))
+                if (!EncounterDumperSV.IsContainedBy(subCol, pt))
                     continue;
-                if (!EncounterDumperSV.TryGetPlaceName(ref area, areaInfo, pt, placeNameMap, areas, scene, fieldIndex, out placeName))
+
+                var otherInfo = areas[otherArea];
+                if (!EncounterDumperSV.TryGetPlaceName(ref otherArea, otherInfo, pt, placeNameMap, areas, scene, fieldIndex, out placeName))
                     continue;
                 loc = placeNameMap[placeName].Index;
                 if (!EncounterDumperSV.IsCrossoverAllowed(loc))

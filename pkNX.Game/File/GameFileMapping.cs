@@ -182,6 +182,7 @@ public class GameFileMapping
         new(Rentals, SingleFile, "bin", "script_event_data", "rental.bin"),
         new(SymbolBehave, SingleFile, "bin", "field", "param", "symbol_encount_mons_param", "symbol_encount_mons_param.bin"),
 
+        new(ItemHash, SingleFile, "bin", "pml", "item", "item_hash_to_index.dat"),
         // Cutscenes    bin\demo
         // Models       bin\archive\pokemon
         // pretty much everything is obviously named :)
@@ -224,6 +225,7 @@ public class GameFileMapping
         new(PokemonResourceList    , SingleFile, "bin", "appli", "res_pokemon", "list", "pokemon_info_list.bin"),
         new(MoveShop               , SingleFile, "bin", "appli", "wazaremember", "bin", "wazashop_table.bin"),
         new(HaShop                 , SingleFile, "bin", "appli", "shop", "bin", "ha_shop_data.bin"),
+        new(MakeList               , SingleFile, "bin", "appli", "table", "making", "makelist.bin"),
 
         new(ArchiveFolder                         , "bin", "archive"),
         new(PokemonArchiveFolder                  , "bin", "archive", "pokemon"),

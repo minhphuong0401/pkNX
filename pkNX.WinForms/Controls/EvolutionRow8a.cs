@@ -3,7 +3,6 @@ using System.Linq;
 using System.Windows.Forms;
 using pkNX.Structures;
 using PKHeX.Drawing.PokeSprite;
-using pkNX.Structures.FlatBuffers.Arceus;
 
 namespace pkNX.WinForms;
 
@@ -14,7 +13,7 @@ public partial class EvolutionRow8a : UserControl
     public static string[] species = [];
     public static string[] types = [];
 
-    private static readonly string[] EvoMethods = Enum.GetNames(typeof(EvolutionType));
+    private static readonly string[] EvoMethods = Enum.GetNames<EvolutionType>();
     private static readonly string[] Levels = Enumerable.Range(0, 100 + 1).Select(z => z.ToString()).ToArray();
     private static readonly string[] Stats = Enumerable.Range(0, 255 + 1).Select(z => z.ToString()).ToArray();
     private static readonly string[] None = [""];

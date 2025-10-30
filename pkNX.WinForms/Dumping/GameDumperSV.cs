@@ -284,9 +284,9 @@ public class GameDumperSV(GameManagerSV rom)
             ZukanB = zukanB,
 
             Types = GetText("typename"),
-            Colors = Enum.GetNames(typeof(PokeColor)),
-            EggGroups = Enum.GetNames(typeof(EggGroup)),
-            ExpGroups = Enum.GetNames(typeof(EXPGroup)),
+            Colors = Enum.GetNames<PokeColor>(),
+            EggGroups = Enum.GetNames<EggGroup>(),
+            ExpGroups = Enum.GetNames<EXPGroup>(),
         };
 
         var lines = pd.Dump(pt);
@@ -343,7 +343,7 @@ public class GameDumperSV(GameManagerSV rom)
         {
             using var ms = new MemoryStream();
             using var bw = new BinaryWriter(ms);
-            foreach (var m in moves.OrderBy(z => z)) // just in case
+            foreach (var m in moves.Order()) // just in case
                 bw.Write(m);
             return ms.ToArray();
         }
@@ -642,15 +642,21 @@ public class GameDumperSV(GameManagerSV rom)
 
     public void DumpEncounters()
     {
-        var dumper = new EncounterDumperSV(rom);
-        var path = GetPath("encounters");
+        const string language = "English";
+
         var cfg = new TextConfig(GameVersion.SV);
-        var specNamesInternal = GetCommonText("monsname", "English", cfg);
-        var moveNames = GetCommonText("wazaname", "English", cfg);
-        var place_names = GetCommonText("place_name", "English", cfg);
-        var ahtb = GetCommonAHTB("place_name", "English");
-        var nameDict = EncounterDumperSV.GetPlaceNameMap(place_names, ahtb);
-        dumper.DumpTo(path, specNamesInternal, moveNames, nameDict);
+        var ahtb = GetCommonAHTB("place_name", language);
+        var place_names = GetCommonText("place_name", language, cfg);
+        var nameDict = EncounterDumperSV.GetInternalStringLookup(place_names, ahtb);
+
+        var config = new EncounterDumpConfigSV
+        {
+            PlaceNameMap = nameDict,
+            SpecNamesInternal = GetCommonText("monsname", language, cfg),
+            MoveNames = GetCommonText("wazaname", language, cfg),
+            Path = GetPath("encounters"),
+        };
+        EncounterDumperSV.Dump(rom, config);
     }
 
     public void DumpRaid()
@@ -767,11 +773,17 @@ public class GameDumperSV(GameManagerSV rom)
     private void DumpUniquePath()
     {
         Dump<ConditionSimpleAutoBattleHecklerAreaArray, ConditionSimpleAutoBattleHecklerArea>("world/data/pokemon/ai_action/trigger/condition_simple_auto_battle_heckler_area/condition_simple_auto_battle_heckler_area_array.bfbs", z => z.Table);
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/partner_movement_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/partner_pokemon_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_collision_unique_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_common_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_contact_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_species_behavior_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_species_table.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_stain_unique_data.bfbs");
+        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/wild_pokemon_group_data.bfbs");
         DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/wild_pokemon_single_data.bfbs");
         DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/wild_pokemon_special_data.bfbs");
-        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_stain_unique_data.bfbs");
-        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_common_data.bfbs");
-        DumpJson<PokemonUniquePathData>("world/data/pokemon/pokemon_unique_path_data/pokemon_species_table.bfbs");
         Dump<PokeObjArray, PokeObj>("world/data/pokeobj/pokeobj_param/pokeobj_param_array.bfbs", z => z.Table);
     }
 
@@ -1050,6 +1062,18 @@ public class GameDumperSV(GameManagerSV rom)
     {
         var files = new[]
         {
+            "world/data/pokemon/ai/pokemon_species_behavior_data/0025_00_00.bfbs",
+            "world/data/pokemon/ai/pokemon_species_table/0025_00_00.bfbs",
+            "world/data/pokemon/collision/pokemon_collision_unique_data/0025_00_00.bfbs",
+            "world/data/pokemon/partner/partner_movement_data/0025_00_00.bfbs",
+            "world/data/pokemon/partner/partner_pokemon_data/0025_00_00.bfbs",
+            "world/data/pokemon/pokemon_common_data/0025_00_00.bfbs",
+            "world/data/pokemon/pokemon_contact_data/0025_00_00.bfbs",
+            "world/data/pokemon/stain/pokemon_stain_unique_data/0025_00_00.bfbs",
+            "world/data/pokemon/wild/wild_pokemon_group_data/0025_00_00.bfbs",
+            "world/data/pokemon/wild/wild_pokemon_single_data/0025_00_00.bfbs",
+            "world/data/pokemon/wild/wild_pokemon_special_data/0025_00_00.bfbs",
+
             "world/data/ui/item_machine/item_table/item_table_array.bfbs",
             "world/data/ui/item_machine/lottery_rate/lottery_rate_array.bfbs",
             "world/data/ui/item_machine/special_item_table/special_item_table_array.bfbs",
@@ -1094,11 +1118,17 @@ public class GameDumperSV(GameManagerSV rom)
             "world/data/battle/plib_item_conversion/plib_item_conversion_array.bfbs",
             "world/data/battle/pokeExceptionTable/pokeExceptionTable_array.bfbs",
             "world/data/pokemon/ai_action/trigger/condition_simple_auto_battle_heckler_area/condition_simple_auto_battle_heckler_area_array.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/partner_movement_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/partner_pokemon_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/pokemon_collision_unique_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/pokemon_common_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/pokemon_contact_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/pokemon_species_behavior_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/pokemon_species_table.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/pokemon_stain_unique_data.bfbs",
+            "world/data/pokemon/pokemon_unique_path_data/wild_pokemon_group_data.bfbs",
             "world/data/pokemon/pokemon_unique_path_data/wild_pokemon_single_data.bfbs",
             "world/data/pokemon/pokemon_unique_path_data/wild_pokemon_special_data.bfbs",
-            "world/data/pokemon/pokemon_unique_path_data/pokemon_stain_unique_data.bfbs",
-            "world/data/pokemon/pokemon_unique_path_data/pokemon_common_data.bfbs",
-            "world/data/pokemon/pokemon_unique_path_data/pokemon_species_table.bfbs",
             "world/data/pokeobj/pokeobj_param/pokeobj_param_array.bfbs",
             // Trainers
             "world/data/trainer/trdata/trdata_array.bfbs",
@@ -1436,5 +1466,26 @@ public class GameDumperSV(GameManagerSV rom)
     {
         var dump = GetPath("encounters");
         MassOutbreakRipper.DumpDeliveryOutbreaks(rom, path, dump);
+    }
+
+    public void DumpKitakamiSpawnPoints()
+    {
+        var dump = GetPath("kitakami");
+        if (!Directory.Exists(dump))
+            Directory.CreateDirectory(dump);
+
+        // Main
+        var dataRegular = rom.GetPackedFile("world/data/encount/point_data/point_data/encount_data_su1.bin");
+        var pointsRegular = FlatBufferConverter.DeserializeFrom<PointDataArray>(dataRegular).Table;
+        using var file = new StreamWriter(Path.Combine(dump, "original_encount.txt"));
+        foreach (var point in pointsRegular)
+            file.WriteLine($"{point.Position.X:R},{point.Position.Z:R}");
+
+        // Outbreak
+        var dataOutbreak = rom.GetPackedFile("world/data/encount/point_data/outbreak_point_data/outbreak_point_su1.bin");
+        var pointsOutbreak = FlatBufferConverter.DeserializeFrom<OutbreakPointArray>(dataOutbreak).Table;
+        using var fileOutbreak = new StreamWriter(Path.Combine(dump, "original_outbreak.txt"));
+        foreach (var point in pointsOutbreak)
+            fileOutbreak.WriteLine($"{point.Position.X:R},{point.Position.Z:R}");
     }
 }

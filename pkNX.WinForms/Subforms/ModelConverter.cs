@@ -16,14 +16,12 @@ using static System.Buffers.Binary.BinaryPrimitives;
 
 using Material = pkNX.Structures.FlatBuffers.Arceus.Material;
 using Mesh = pkNX.Structures.FlatBuffers.Arceus.Mesh;
-using Bone = pkNX.Structures.FlatBuffers.Arceus.Bone;
 using SamplerState = pkNX.Structures.FlatBuffers.Arceus.SamplerState;
 using UVWrapMode = pkNX.Structures.FlatBuffers.Arceus.UVWrapMode;
 
 using Material8 = pkNX.Structures.FlatBuffers.SWSH.Material;
 using Mesh8 = pkNX.Structures.FlatBuffers.SWSH.Mesh;
 using Bone8 = pkNX.Structures.FlatBuffers.SWSH.Bone;
-using SamplerState8 = pkNX.Structures.FlatBuffers.SWSH.SamplerState;
 using UVWrapMode8 = pkNX.Structures.FlatBuffers.SWSH.UVWrapMode;
 
 namespace pkNX.WinForms;
@@ -113,13 +111,6 @@ public partial class ModelConverter : Form
     }
 
     [FlatBufferTable, TypeConverter(typeof(ExpandableObjectConverter))]
-    public class MeshMaterialWrapper
-    {
-        [FlatBufferItem(0)] public string Name { get; set; } = string.Empty;
-        [FlatBufferItem(1)] public Material[] Materials { get; set; } = [];
-    }
-
-    [FlatBufferTable, TypeConverter(typeof(ExpandableObjectConverter))]
     public class PokemonModelGfpak
     {
         [FlatBufferItem(0)] public PokeConfig Config { get; set; } = new();
@@ -130,7 +121,6 @@ public partial class ModelConverter : Form
         [FlatBufferItem(5)] public Material[] DefaultMaterials { get; set; } = [];
         [FlatBufferItem(6)] public MeshMaterialWrapper[] MeshMaterials { get; set; } = [];
         [FlatBufferItem(7)] public Skeleton Skeleton { get; set; } = new();
-
         [FlatBufferItem(8)] public string[] UsedTextures { get; set; } = [];
     }
 

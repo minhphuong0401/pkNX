@@ -28,6 +28,8 @@ public partial class AreaEditor8a : Form
 
     public AreaEditor8a(GameManagerPLA rom)
     {
+        TypeRegistrationHelper.RegisterIListConvertersRecursively(typeof(EncounterTable));
+
         ROM = rom;
 
         Resident = (GFPack)ROM.GetFile(GameFile.Resident);
@@ -70,7 +72,7 @@ public partial class AreaEditor8a : Form
     private void B_Randomize_Click(object sender, EventArgs e)
     {
         SaveArea();
-        RandomizeArea(Area, (SpeciesSettings)PG_RandSettings.SelectedObject);
+        RandomizeArea(Area, (SpeciesSettings)PG_RandSettings.SelectedObject!);
         LoadArea();
         System.Media.SystemSounds.Asterisk.Play();
     }
