@@ -88,6 +88,7 @@ public class EncounterDumperSV(IFileInternal rom)
             SerializeEncounters(binPath, db);
         }
 
+
         // Fixed symbols
         List<byte[]> serialized = [];
         var fsymData = FlatBufferConverter.DeserializeFrom<FixedSymbolTableArray>(rom.GetPackedFile("world/data/field/fixed_symbol/fixed_symbol_table/fixed_symbol_table_array.bin"));
