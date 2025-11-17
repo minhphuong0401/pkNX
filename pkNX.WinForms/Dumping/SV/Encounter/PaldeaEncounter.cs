@@ -148,7 +148,35 @@ public record PaldeaEncounter(ushort Species, byte Form, byte Sex, byte MinLevel
     {
         var form = Form == 0 ? "" : $"-{Form}";
         var sex = Sex == 0 ? "" : $" (sex={Sex})";
-        return $"{species}{form}{sex} Lv. {MinLevel}-{MaxLevel} {Weather}";
+        string foundTime = Convert.ToString(15 - Time, 2).PadLeft(4, '0');
+        string resultTime = "";
+        if (foundTime == "1111")
+        {
+            resultTime = "All Day";
+        }
+        else
+        {
+            if (foundTime.Substring(0, 1) == "1")
+            {
+                resultTime = resultTime + "Morning, ";
+            }
+            if (foundTime.Substring(3, 1) == "1")
+            {
+                resultTime = resultTime + "Afternoon, ";
+            }
+            if (foundTime.Substring(1, 1) == "1")
+            {
+                resultTime = resultTime + "Evening, ";
+            }
+            if (foundTime.Substring(2, 1) == "1")
+            {
+                resultTime = resultTime + "Night, ";
+            }
+            resultTime = resultTime.Substring(0, resultTime.Length - 2);
+
+        }
+
+        return $"{species}{form}{sex}/Lv.{MinLevel}-{MaxLevel}/{resultTime}/{Biome}/{EncRate}/{LeaderName}/{BandRate}/{Version}/{Boost}/{Weather}";
     }
 
     public bool Absorb(PaldeaEncounter other)
